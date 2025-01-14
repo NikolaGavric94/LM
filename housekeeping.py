@@ -6,6 +6,7 @@ from math import dist
 from random import randrange
 import os
 from time import time
+from pretty_time import compare_dates
 
 # Change the working directory to the folder this script is in.
 # Doing this because I'll be putting the files from each video in their 
@@ -33,9 +34,9 @@ class Housekeeper:
     turf_boost_loc = None
     shield_loc = None
     use_shield_loc = None
-    shield_expires_in_loc = None
-    shielded = None
+    shield_records_loc = None
     shielded_at = None
+    shield_status_roi = None
     # Notification locations
     attack_notif_loc = None
     scout_notif_loc = None
@@ -111,6 +112,8 @@ class Housekeeper:
         if all([opened_resources, found_balance, read_balance]):
             res_names = ['Food', 'Stone', 'Wood', 'Ore', 'Gold']
             self.last_balance = ' '.join(f"{text} {res_names[i]}" for i, text in enumerate(read_balance))
+            return True
+        return False
 
     def open_turf_boosts(self, screenshot, i=0):
         if self.turf_boost_loc is None:
@@ -135,7 +138,6 @@ class Housekeeper:
         return True
 
     def open_shield_boost(self, screenshot):
-        pyautogui.vscroll(1000, self.turf_boost_loc[0]/2, self.turf_boost_loc[1])
         sleep(1)
         if self.shield_loc is None:
             shield_icon_img = cv2.imread('images/items/shield_icon.png', cv2.IMREAD_GRAYSCALE)
@@ -225,32 +227,89 @@ class Housekeeper:
         # self.listen_for_supply(screenshot)
         return [self.listen_for_attacks(screenshot), self.listen_for_scouts(screenshot)]
     
-    def check_shield_timer(self, screenshot):
+    def is_shielded(self, screenshot):
         # cant find this image because of how filled the bar can be
         # easy solution is to check if the image without the shield exists on screen, if not we are shielded
         # hard solution will be to somehow read the timer efficiently and have the timer always
         # another quicker way to read if we are shielded is to check if the icon in turf is second one in array of turf_boosts_imgs
         # with the above approach we cant rely on shield timer tho so needs to be removed
-        use_shield_img = cv2.imread('images/sections/shield_timer.png', cv2.IMREAD_GRAYSCALE)
+        shield_img = cv2.imread('images/items/turf_boosts_2.png', cv2.IMREAD_GRAYSCALE)
         # make sure depth is 3 to be able to convert to color
         if len(screenshot.shape) == 3:
             screenshot = cv2.cvtColor(screenshot, cv2.COLOR_BGR2GRAY)
-        found, (x, y) = self.vision.find(screenshot, use_shield_img, .9)
+        found, _ = self.vision.find(screenshot, shield_img, .9)
         
         if not found:
-            self.shielded = False
             self.shielded_at = None
             return False
-        
-        # get height and width of image to get full position
-        h, w = use_shield_img.shape
-        x, y = self.vision.get_click_point((int(x), int(y), int(w), int(h)))
-        self.use_shield_loc = (int(x), int(y), int(w), int(h))
-        # we are shielded
-        self.shielded = True
-        print ("Location of expires in saved at: [%i, %i, %i, %i]" % (self.use_shield_loc))
 
-        return all(self.shielded, self.shield_expires_in_loc)
+        return True
+    
+    def open_and_save_records_loc(self, screenshot):
+        if self.shield_records_loc is None:
+            records_img = cv2.imread('images/sections/records.png', cv2.IMREAD_GRAYSCALE)
+            # make sure depth is 3 to be able to convert to color
+            if len(screenshot.shape) == 3:
+                screenshot = cv2.cvtColor(screenshot, cv2.COLOR_BGR2GRAY)
+            found, loc = self.vision.find(screenshot, records_img, .9)
+
+            if not found:
+                sleep(1)
+                return self.open_and_save_records_loc(screenshot)
+            
+            # get height and width of image to get full position
+            x, y = loc
+            h, w = records_img.shape
+            x, y = self.vision.get_click_point((int(x), int(y), int(w), int(h)))
+            self.shield_records_loc = (int(x), int(y), int(w), int(h))
+            print ("Location of shield records saved at: [%i, %i, %i, %i]" % (self.shield_records_loc))
+            pyautogui.click(x, y)
+
+        return True
+    
+    def find_shield_status_loc(self, screenshot):
+        if self.shield_status_roi is None:
+            records_img = cv2.imread('images/sections/shield_records.png', cv2.IMREAD_GRAYSCALE)
+            # make sure depth is 3 to be able to convert to color
+            if len(screenshot.shape) == 3:
+                screenshot = cv2.cvtColor(screenshot, cv2.COLOR_BGR2GRAY)
+            found, loc = self.vision.find(screenshot, records_img, .9)
+
+            if not found:
+                sleep(1)
+                return self.find_shield_status_loc(screenshot)
+            
+            # get height and width of image to get full position
+            x, y = loc
+            h, w = records_img.shape
+            self.shield_status_roi = (int(x), int(y+h), int(w), int(h))
+            print ("Location of shield records saved at: [%i, %i, %i, %i]" % (self.shield_status_roi))
+
+        return True
+    
+    def read_shield_status_loc(self, records_screenshot):
+        # get latest shield status loc relative to the screen
+        x, y, w, h = self.shield_status_roi
+        # get region for pyautogui
+        shield_status_roi = (x, y, w, h)
+        records_screenshot = pyautogui.screenshot(region=shield_status_roi)
+        records_screenshot = cv2.cvtColor(np.array(records_screenshot), cv2.COLOR_RGBA2GRAY)
+        results = self.vision.read(records_screenshot, .9)
+        return " ".join([result[1] for result in results]).split()
+    
+    def save_shield_time(self, time):
+        # ['01/14/25', '18.15.40', 'Estimated', '01/14/25', '22.15.40'] example time
+        # if any(t == 'Estimated' for t in time) and len(time) == 5:
+        # ^ this means we are shielded ^
+        if len(time) < 4 or len(time) > 5:
+            print ('Houston we have a problem with shield status identifying')
+            return False
+        dt = time[-2:]
+        compare_dates(" ".join(dt))
+
+    
+    def scroll_top_of_boosts(self):
+        pyautogui.vscroll(1000, self.turf_boost_loc[0]/2, self.turf_boost_loc[1])
     
     def close(self, counter=1):
         pyautogui.press('esc', presses=counter)
@@ -258,10 +317,15 @@ class Housekeeper:
     def initialize(self, screenshot):
         print ('Initializing housekeeping')
         # save open resources loc
-        self.open_and_save_resources(screenshot)
-        self.close()
+        # self.open_and_save_resources(screenshot)
+        # self.close()
         # open and save location of stuff for shielding
         self.open_turf_boosts(screenshot)
-        self.open_shield_boost(screenshot)
-        self.save_use_shield_loc(screenshot)
+        self.scroll_top_of_boosts()
+        self.open_and_save_records_loc(screenshot)
+        self.find_shield_status_loc(screenshot)
+        read = self.read_shield_status_loc(screenshot)
+        self.save_shield_time(read)
+        # self.open_shield_boost(screenshot)
+        # self.save_use_shield_loc(screenshot)
         self.close(2)

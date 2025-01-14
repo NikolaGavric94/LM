@@ -66,12 +66,11 @@ while(True):
         active = shield_time(housekeeper.shielded_at)
         print ('Shield timer is not expired? %s' % (active))
         if not active:
-            bot.open_shield_boost()
-            shielded = housekeeper.check_shield_timer(wincap.screenshot)
+            shielded = housekeeper.is_shielded(wincap.screenshot)
+            bot.open_shield_records()
 
-            print ('Shield is %s' % (housekeeper.shielded))
+            print ('Shield is %s' % (shielded))
             if shielded:
-                bot.close()
                 bot.state = BotState.IDLE
             else: bot.state = BotState.APPLYING_SHIELD
         else: bot.state = BotState.IDLE

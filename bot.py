@@ -78,6 +78,11 @@ class LMBot:
     def close(self, counter=1, interval=0):
         pyautogui.press('esc', presses=counter, interval=interval)
 
+    def open_shield_records(self):
+        pyautogui.click(self.housekeeper.turf_boost_loc[0], self.housekeeper.turf_boost_loc[1])
+        pyautogui.vscroll(1000, self.middle_x, self.middle_y)
+        pyautogui.click(self.housekeeper.shield_records_loc[0], self.housekeeper.shield_records_loc[1])
+
     # def click_next_target(self):
     #     # 1. order targets by distance from center
     #     # loop:
@@ -241,11 +246,12 @@ class LMBot:
                     self.state = BotState.GATHERING_LOCATIONS
                     self.lock.release()
             elif self.state == BotState.IDLE:
+                pass
                 # notifications = self.housekeeper.listen_for_notifications(self.screenshot)
-                self.lock.acquire()
+                # self.lock.acquire()
                 #if any(notifications): 
-                self.state = BotState.CHECKING_SHIELD
-                self.lock.release()
+                # self.state = BotState.CHECKING_SHIELD
+                # self.lock.release()
                     
                 # self.lock.release()
             # elif self.state == BotState.CHECKING_BALANCE:

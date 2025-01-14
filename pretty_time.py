@@ -1,10 +1,11 @@
+from datetime import date, datetime
+
 def pretty_date(time=False):
     """
     Get a datetime object or a int() Epoch timestamp and return a
     pretty string like 'an hour ago', 'Yesterday', '3 months ago',
     'just now', etc
     """
-    from datetime import datetime
     now = datetime.now()
     diff = now - datetime.fromtimestamp(time)
     second_diff = diff.seconds
@@ -41,12 +42,28 @@ def shield_time(supplied_time):
     if supplied_time is None:
         return False
     
-    from time import time
     # Get the current timestamp
-    now = time()
+    now = datetime.now()
     
     # Calculate the absolute difference in seconds
     time_difference = abs(now - supplied_time)  # Difference in seconds
 
     # Check if the difference is less than 4 hours (4 * 3600 seconds)
     return time_difference < 4 * 3600
+
+def compare_dates(supplied_time, fr='%m/%d/%y %H.%M.%S'):
+    supplied_obj = format(supplied_time, fr)
+    now = datetime.now()
+
+    if supplied_obj == now:
+        print ('You a crazy mofo for tracking this jesus')
+        return False
+    elif supplied_obj > now:
+        print ('We are still shielded, life is good')
+        return True
+
+    print ('Panik. Shield has expired')
+    return False
+
+def format(supplied_time, format='%m/%d/%y %H.%M.%S'):
+    return datetime.strptime(supplied_time, format)
