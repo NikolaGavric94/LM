@@ -37,22 +37,12 @@ def pretty_date(time=False):
         return str(day_diff // 30) + " months ago"
     return str(day_diff // 365) + " years ago"
 
-def shield_time(supplied_time):
-    # if no time return immediatelly
-    if supplied_time is None:
-        return False
-    
-    # Get the current timestamp
-    now = datetime.now()
-    
-    # Calculate the absolute difference in seconds
-    time_difference = abs(now - supplied_time)  # Difference in seconds
-
-    # Check if the difference is less than 4 hours (4 * 3600 seconds)
-    return time_difference < 4 * 3600
-
 def compare_dates(supplied_time, fr='%m/%d/%y %H.%M.%S'):
-    supplied_obj = format(supplied_time, fr)
+    # if we pass string convert it to datetime
+    if isinstance(supplied_time, str):
+        supplied_time = format(supplied_time, fr)
+
+    supplied_obj = supplied_time
     now = datetime.now()
 
     if supplied_obj == now:

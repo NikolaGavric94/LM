@@ -1,13 +1,11 @@
 import cv2 as cv
-import numpy as np
 import os
 from windowcapture import WindowCapture
 from vision import Vision
 from housekeeping import Housekeeper
 from bot import LMBot, BotState
-from time import time, sleep
+from time import time
 import easyocr
-from pretty_time import shield_time
 
 # Change the working directory to the folder this script is in.
 # Doing this because I'll be putting the files from each video in their 
@@ -29,7 +27,7 @@ housekeeper = Housekeeper(vision)
 # initialize bot
 bot = LMBot(window_offset, (wincap.w, wincap.h), housekeeper)
 # set of available bot commands
-available_commands = ["!bal", "!start", "!end"]
+available_commands = ["#bal", "#start", "#end"]
 # start threads
 wincap.start()
 bot.start()
@@ -56,24 +54,21 @@ while(True):
         print ('Bot going idle now')
     elif bot.state == BotState.APPLYING_SHIELD:
         print ('Being invaded, applying shield')
+        bot.open_shield_boost()
         bot.use_shield()
-        housekeeper.shielded_at = time()
-        print(f"--- Shielding took: {housekeeper.shielded_at - start:.2f} seconds ---")
+        print(f"--- Shielding took: {start - time():.2f} seconds ---")
+        housekeeper.open_and_save_shield_timer(wincap.screenshot)
+        print ('Shield expires at: %s' % (housekeeper.shield_expires_at.strftime("%d/%m/%Y %H:%M:%S")))
         bot.state = BotState.CHECKING_SHIELD
-        print ('Confirm we are shielded')
     elif bot.state == BotState.CHECKING_SHIELD:
-        # it's not been 4 hours since last shield, skip recognition
-        active = shield_time(housekeeper.shielded_at)
-        print ('Shield timer is not expired? %s' % (active))
+        # Is shield still active
+        active = housekeeper.is_shield_active()
+        print ('Shield is active? %s' % (active))
         if not active:
-            shielded = housekeeper.is_shielded(wincap.screenshot)
-            bot.open_shield_records()
-
-            print ('Shield is %s' % (shielded))
-            if shielded:
-                bot.state = BotState.IDLE
-            else: bot.state = BotState.APPLYING_SHIELD
-        else: bot.state = BotState.IDLE
+            bot.state = BotState.APPLYING_SHIELD
+        else:
+            print ('Shield timer expires at: %s' % (housekeeper.shield_expires_at.strftime("%d/%m/%Y %H:%M:%S")))
+            bot.state = BotState.IDLE
     if DEBUG:
         # display the images
         cv.imshow('Matches', wincap.screenshot)

@@ -1,4 +1,5 @@
 import cv2 as cv
+import keyboard
 from time import time, sleep
 from threading import Thread, Lock
 import os
@@ -67,9 +68,8 @@ class LMBot:
 
     def use_shield(self):
         pyautogui.click(self.housekeeper.shield_loc[0], self.housekeeper.shield_loc[1])
-        # pyautogui.click(self.housekeeper.use_shield_loc[0], self.housekeeper.use_shield_loc[1])
-        pyautogui.moveTo(self.housekeeper.use_shield_loc[0], self.housekeeper.use_shield_loc[1])
-        self.close()
+        pyautogui.click(self.housekeeper.use_shield_loc[0], self.housekeeper.use_shield_loc[1])
+        self.close(2)
 
     def open_shield_boost(self):
         pyautogui.click(self.housekeeper.turf_boost_loc[0], self.housekeeper.turf_boost_loc[1])
@@ -83,130 +83,6 @@ class LMBot:
         pyautogui.vscroll(1000, self.middle_x, self.middle_y)
         pyautogui.click(self.housekeeper.shield_records_loc[0], self.housekeeper.shield_records_loc[1])
 
-    # def click_next_target(self):
-    #     # 1. order targets by distance from center
-    #     # loop:
-    #     #   2. hover over the nearest target
-    #     #   3. confirm that it's limestone via the tooltip
-    #     #   4. if it's not, check the next target
-    #     # endloop
-    #     # 5. if no target was found return false
-    #     # 6. click on the found target and return true
-    #     targets = self.targets_ordered_by_distance(self.targets)
-
-    #     target_i = 0
-    #     found_limestone = False
-    #     while not found_limestone and target_i < len(targets):
-    #         # if we stopped our script, exit this loop
-    #         if self.stopped:
-    #             break
-
-    #         # load up the next target in the list and convert those coordinates
-    #         # that are relative to the game screenshot to a position on our
-    #         # screen
-    #         target_pos = targets[target_i]
-    #         screen_x, screen_y = self.get_screen_position(target_pos)
-    #         print('Moving mouse to x:{} y:{}'.format(screen_x, screen_y))
-
-    #         # move the mouse
-    #         pyautogui.moveTo(x=screen_x, y=screen_y)
-    #         # short pause to let the mouse movement complete and allow
-    #         # time for the tooltip to appear
-    #         sleep(1.250)
-    #         # confirm limestone tooltip
-    #         if self.confirm_tooltip(target_pos):
-    #             print('Click on confirmed target at x:{} y:{}'.format(screen_x, screen_y))
-    #             found_limestone = True
-    #             pyautogui.click()
-    #             # save this position to the click history
-    #             self.click_history.append(target_pos)
-    #         target_i += 1
-
-    #     return found_limestone
-
-    # def have_stopped_moving(self):
-    #     # if we haven't stored a screenshot to compare to, do that first
-    #     if self.movement_screenshot is None:
-    #         self.movement_screenshot = self.screenshot.copy()
-    #         return False
-
-    #     # compare the old screenshot to the new screenshot
-    #     result = cv.matchTemplate(self.screenshot, self.movement_screenshot, cv.TM_CCOEFF_NORMED)
-    #     # we only care about the value when the two screenshots are laid perfectly over one 
-    #     # another, so the needle position is (0, 0). since both images are the same size, this
-    #     # should be the only result that exists anyway
-    #     similarity = result[0][0]
-    #     print('Movement detection similarity: {}'.format(similarity))
-
-    #     if similarity >= self.MOVEMENT_STOPPED_THRESHOLD:
-    #         # pictures look similar, so we've probably stopped moving
-    #         print('Movement detected stop')
-    #         return True
-
-    #     # looks like we're still moving.
-    #     # use this new screenshot to compare to the next one
-    #     self.movement_screenshot = self.screenshot.copy()
-    #     return False
-
-    # def targets_ordered_by_distance(self, targets):
-    #     # our character is always in the center of the screen
-    #     my_pos = (self.window_w / 2, self.window_h / 2)
-    #     # searched "python order points by distance from point"
-    #     # simply uses the pythagorean theorem
-    #     # https://stackoverflow.com/a/30636138/4655368
-    #     def pythagorean_distance(pos):
-    #         return sqrt((pos[0] - my_pos[0])**2 + (pos[1] - my_pos[1])**2)
-    #     targets.sort(key=pythagorean_distance)
-
-    #     # print(my_pos)
-    #     # print(targets)
-    #     # for t in targets:
-    #     #    print(pythagorean_distance(t))
-
-    #     # ignore targets at are too close to our character (within 130 pixels) to avoid 
-    #     # re-clicking a deposit we just mined
-    #     targets = [t for t in targets if pythagorean_distance(t) > self.IGNORE_RADIUS]
-
-    #     return targets
-
-    # def confirm_tooltip(self, target_position):
-    #     # check the current screenshot for the limestone tooltip using match template
-    #     result = cv.matchTemplate(self.screenshot, self.limestone_tooltip, cv.TM_CCOEFF_NORMED)
-    #     # get the best match postition
-    #     min_val, max_val, min_loc, max_loc = cv.minMaxLoc(result)
-    #     # if we can closely match the tooltip image, consider the object found
-    #     if max_val >= self.TOOLTIP_MATCH_THRESHOLD:
-    #         # print('Tooltip found in image at {}'.format(max_loc))
-    #         # screen_loc = self.get_screen_position(max_loc)
-    #         # print('Found on screen at {}'.format(screen_loc))
-    #         # mouse_position = pyautogui.position()
-    #         # print('Mouse on screen at {}'.format(mouse_position))
-    #         # offset = (mouse_position[0] - screen_loc[0], mouse_position[1] - screen_loc[1])
-    #         # print('Offset calculated as x: {} y: {}'.format(offset[0], offset[1]))
-    #         # the offset I always got was Offset calculated as x: -22 y: -29
-    #         return True
-    #     #print('Tooltip not found.')
-    #     return False
-
-    # def click_backtrack(self):
-    #     # pop the top item off the clicked points stack. this will be the click that
-    #     # brought us to our current location.
-    #     last_click = self.click_history.pop()
-    #     # to undo this click, we must mirror it across the center point. so if our
-    #     # character is at the middle of the screen at ex. (100, 100), and our last
-    #     # click was at (120, 120), then to undo this we must now click at (80, 80).
-    #     # our character is always in the center of the screen
-    #     my_pos = (self.window_w / 2, self.window_h / 2)
-    #     mirrored_click_x = my_pos[0] - (last_click[0] - my_pos[0])
-    #     mirrored_click_y = my_pos[1] - (last_click[1] - my_pos[1])
-    #     # convert this screenshot position to a screen position
-    #     screen_x, screen_y = self.get_screen_position((mirrored_click_x, mirrored_click_y))
-    #     print('Backtracking to x:{} y:{}'.format(screen_x, screen_y))
-    #     pyautogui.moveTo(x=screen_x, y=screen_y)
-    #     # short pause to let the mouse movement complete
-    #     sleep(0.500)
-    #     pyautogui.click()
-
     # translate a pixel position on a screenshot image to a pixel position on the screen.
     # pos = (x, y)
     # WARNING: if you move the window being captured after execution is started, this will
@@ -214,13 +90,6 @@ class LMBot:
     # the WindowCapture __init__ constructor.
     def get_screen_position(self, pos):
         return (pos[0] + self.window_offset[0], pos[1] + self.window_offset[1])
-
-    # threading methods
-
-    # def update_targets(self, targets):
-    #     self.lock.acquire()
-    #     self.targets = targets
-    #     self.lock.release()
 
     def update_screenshot(self, screenshot):
         self.lock.acquire()
@@ -246,59 +115,12 @@ class LMBot:
                     self.state = BotState.GATHERING_LOCATIONS
                     self.lock.release()
             elif self.state == BotState.IDLE:
-                pass
-                # notifications = self.housekeeper.listen_for_notifications(self.screenshot)
-                # self.lock.acquire()
-                #if any(notifications): 
-                # self.state = BotState.CHECKING_SHIELD
-                # self.lock.release()
-                    
-                # self.lock.release()
-            # elif self.state == BotState.CHECKING_BALANCE:
-                # check the given click point targets, confirm a limestone deposit,
-                # then click it.
-                # success = self.check_resources_command()
-                # # if not successful, try one more time
-                # if not success:
-                #     success = self.check_resources_command()
-
-                # if successful, switch state to moving
-                # if not, backtrack or hold the current position
-                # if success:
-                #     self.lock.acquire()
-                #     self.state = BotState.IDLE
-                #     self.lock.release()
-                # elif len(self.click_history) > 0:
-                #     self.click_backtrack()
-                #     self.lock.acquire()
-                #     self.state = BotState.BACKTRACKING
-                #     self.lock.release()
-                # else:
-                #     # stay in place and keep searching
-                #     pass
-
-            # elif self.state == BotState.MOVING or self.state == BotState.BACKTRACKING:
-            #     # see if we've stopped moving yet by comparing the current pixel mesh
-            #     # to the previously observed mesh
-            #     if not self.have_stopped_moving():
-            #         # wait a short time to allow for the character position to change
-            #         sleep(0.500)
-            #     else:
-            #         # reset the timestamp marker to the current time. switch state
-            #         # to mining if we clicked on a deposit, or search again if we
-            #         # backtracked
-            #         self.lock.acquire()
-            #         if self.state == BotState.MOVING:
-            #             self.timestamp = time()
-            #             self.state = BotState.MINING
-            #         elif self.state == BotState.BACKTRACKING:
-            #             self.state = BotState.SEARCHING
-            #         self.lock.release()
-                
-            # elif self.state == BotState.MINING:
-            #     # see if we're done mining. just wait some amount of time
-            #     if time() > self.timestamp + self.MINING_SECONDS:
-            #         # return to the searching state
-            #         self.lock.acquire()
-            #         self.state = BotState.SEARCHING
-            #         self.lock.release()
+                # save pc resources by not straining CPU that often
+                # otherwise remove the below --- if --- statement
+                if not self.housekeeper.is_shield_active():
+                    print ('Listening for hostilities...')
+                    notifications = self.housekeeper.listen_for_notifications(self.screenshot)
+                    if any(notifications):
+                        self.lock.acquire()
+                        self.state = BotState.CHECKING_SHIELD
+                        self.lock.release()

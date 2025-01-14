@@ -6,7 +6,7 @@ from math import dist
 from random import randrange
 import os
 from time import time
-from pretty_time import compare_dates
+from pretty_time import compare_dates, format
 
 # Change the working directory to the folder this script is in.
 # Doing this because I'll be putting the files from each video in their 
@@ -35,7 +35,7 @@ class Housekeeper:
     shield_loc = None
     use_shield_loc = None
     shield_records_loc = None
-    shielded_at = None
+    shield_expires_at = None
     shield_status_roi = None
     # Notification locations
     attack_notif_loc = None
@@ -227,24 +227,6 @@ class Housekeeper:
         # self.listen_for_supply(screenshot)
         return [self.listen_for_attacks(screenshot), self.listen_for_scouts(screenshot)]
     
-    def is_shielded(self, screenshot):
-        # cant find this image because of how filled the bar can be
-        # easy solution is to check if the image without the shield exists on screen, if not we are shielded
-        # hard solution will be to somehow read the timer efficiently and have the timer always
-        # another quicker way to read if we are shielded is to check if the icon in turf is second one in array of turf_boosts_imgs
-        # with the above approach we cant rely on shield timer tho so needs to be removed
-        shield_img = cv2.imread('images/items/turf_boosts_2.png', cv2.IMREAD_GRAYSCALE)
-        # make sure depth is 3 to be able to convert to color
-        if len(screenshot.shape) == 3:
-            screenshot = cv2.cvtColor(screenshot, cv2.COLOR_BGR2GRAY)
-        found, _ = self.vision.find(screenshot, shield_img, .9)
-        
-        if not found:
-            self.shielded_at = None
-            return False
-
-        return True
-    
     def open_and_save_records_loc(self, screenshot):
         if self.shield_records_loc is None:
             records_img = cv2.imread('images/sections/records.png', cv2.IMREAD_GRAYSCALE)
@@ -305,8 +287,16 @@ class Housekeeper:
             print ('Houston we have a problem with shield status identifying')
             return False
         dt = time[-2:]
-        compare_dates(" ".join(dt))
+        self.shield_expires_at = format(" ".join(dt))
+        return True
 
+    def is_shield_active(self):
+        # if no time return immediately
+        if self.shield_expires_at is None:
+            return False
+        
+        # If True then we are shielded, otherwise we are not
+        return compare_dates(self.shield_expires_at)
     
     def scroll_top_of_boosts(self):
         pyautogui.vscroll(1000, self.turf_boost_loc[0]/2, self.turf_boost_loc[1])
@@ -314,18 +304,23 @@ class Housekeeper:
     def close(self, counter=1):
         pyautogui.press('esc', presses=counter)
 
-    def initialize(self, screenshot):
-        print ('Initializing housekeeping')
-        # save open resources loc
-        # self.open_and_save_resources(screenshot)
-        # self.close()
-        # open and save location of stuff for shielding
+    def open_and_save_shield_timer(self, screenshot):
         self.open_turf_boosts(screenshot)
         self.scroll_top_of_boosts()
         self.open_and_save_records_loc(screenshot)
         self.find_shield_status_loc(screenshot)
         read = self.read_shield_status_loc(screenshot)
         self.save_shield_time(read)
-        # self.open_shield_boost(screenshot)
-        # self.save_use_shield_loc(screenshot)
+
+    def initialize(self, screenshot):
+        print ('Initializing housekeeping')
+        # save open resources loc
+        self.open_and_save_resources(screenshot)
+        self.close()
+        # save open shield timer
+        self.open_and_save_shield_timer(screenshot)
+        self.close()
+        # open and save location of stuff for shielding
+        self.open_shield_boost(screenshot)
+        self.save_use_shield_loc(screenshot)
         self.close(2)
