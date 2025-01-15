@@ -245,7 +245,7 @@ class Housekeeper:
             x, y = self.vision.get_click_point((int(x), int(y), int(w), int(h)))
             self.shield_records_loc = (int(x), int(y), int(w), int(h))
             print ("Location of shield records saved at: [%i, %i, %i, %i]" % (self.shield_records_loc))
-            pyautogui.click(x, y)
+            pyautogui.click(self.shield_records_loc[0], self.shield_records_loc[1])
 
         return True
     
@@ -304,13 +304,17 @@ class Housekeeper:
     def close(self, counter=1):
         pyautogui.press('esc', presses=counter)
 
+    def read_and_save_shield_timer(self, screenshot):
+        self.find_shield_status_loc(screenshot)
+        read = self.read_shield_status_loc(screenshot)
+        self.save_shield_time(read)
+
     def open_and_save_shield_timer(self, screenshot):
         self.open_turf_boosts(screenshot)
         self.scroll_top_of_boosts()
         self.open_and_save_records_loc(screenshot)
-        self.find_shield_status_loc(screenshot)
-        read = self.read_shield_status_loc(screenshot)
-        self.save_shield_time(read)
+        self.read_and_save_shield_timer(screenshot)
+        
 
     def initialize(self, screenshot):
         print ('Initializing housekeeping')

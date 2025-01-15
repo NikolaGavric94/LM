@@ -66,22 +66,22 @@ class LMBot:
         self.housekeeper = housekeeper
         print ('LM Bot initialized.')
 
-    def use_shield(self):
-        pyautogui.click(self.housekeeper.shield_loc[0], self.housekeeper.shield_loc[1])
-        pyautogui.click(self.housekeeper.use_shield_loc[0], self.housekeeper.use_shield_loc[1])
-        self.close(2)
-
     def open_shield_boost(self):
         pyautogui.click(self.housekeeper.turf_boost_loc[0], self.housekeeper.turf_boost_loc[1])
         pyautogui.vscroll(1000, self.middle_x, self.middle_y)
 
-    def close(self, counter=1, interval=0):
-        pyautogui.press('esc', presses=counter, interval=interval)
+    def use_shield(self):
+        self.open_shield_boost()
+        pyautogui.click(self.housekeeper.shield_loc[0], self.housekeeper.shield_loc[1])
+        pyautogui.click(self.housekeeper.use_shield_loc[0], self.housekeeper.use_shield_loc[1])
+        self.close(2)
 
     def open_shield_records(self):
-        pyautogui.click(self.housekeeper.turf_boost_loc[0], self.housekeeper.turf_boost_loc[1])
-        pyautogui.vscroll(1000, self.middle_x, self.middle_y)
+        self.open_shield_boost()
         pyautogui.click(self.housekeeper.shield_records_loc[0], self.housekeeper.shield_records_loc[1])
+
+    def close(self, counter=1, interval=0):
+        pyautogui.press('esc', presses=counter, interval=interval)
 
     # translate a pixel position on a screenshot image to a pixel position on the screen.
     # pos = (x, y)
@@ -115,12 +115,12 @@ class LMBot:
                     self.state = BotState.GATHERING_LOCATIONS
                     self.lock.release()
             elif self.state == BotState.IDLE:
+                self.lock.acquire()
                 # save pc resources by not straining CPU that often
                 # otherwise remove the below --- if --- statement
                 if not self.housekeeper.is_shield_active():
                     print ('Listening for hostilities...')
                     notifications = self.housekeeper.listen_for_notifications(self.screenshot)
                     if any(notifications):
-                        self.lock.acquire()
                         self.state = BotState.CHECKING_SHIELD
-                        self.lock.release()
+                self.lock.release()

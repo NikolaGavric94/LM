@@ -1,5 +1,6 @@
 import cv2 as cv
 import os
+import keyboard
 from windowcapture import WindowCapture
 from vision import Vision
 from housekeeping import Housekeeper
@@ -12,7 +13,7 @@ import easyocr
 # own folder on GitHub
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-DEBUG = True
+DEBUG = False
 
 # Initialize reader
 reader = easyocr.Reader(['en'], gpu=True)
@@ -54,11 +55,12 @@ while(True):
         print ('Bot going idle now')
     elif bot.state == BotState.APPLYING_SHIELD:
         print ('Being invaded, applying shield')
-        bot.open_shield_boost()
         bot.use_shield()
         print(f"--- Shielding took: {start - time():.2f} seconds ---")
-        housekeeper.open_and_save_shield_timer(wincap.screenshot)
+        bot.open_shield_records()
+        housekeeper.read_and_save_shield_timer(wincap.screenshot)
         print ('Shield expires at: %s' % (housekeeper.shield_expires_at.strftime("%d/%m/%Y %H:%M:%S")))
+        bot.close(2)
         bot.state = BotState.CHECKING_SHIELD
     elif bot.state == BotState.CHECKING_SHIELD:
         # Is shield still active
@@ -72,32 +74,12 @@ while(True):
     if DEBUG:
         # display the images
         cv.imshow('Matches', wincap.screenshot)
-    # elif bot.state == BotState.IDLE:
-    #     if vision.is_chat_open(wincap.screenshot):
-    #         print ('Searching for keywords now')
-    #         text = reader.readtext(wincap.screenshot)
-    #         for t in text:
-    #             box, text, accuracy = t
-    #             if accuracy >= 0.99:
-    #                 print (text, accuracy)
-    #                 cv.rectangle(wincap.screenshot, box[0], box[2], (0, 255, 0), 2)
-
-    #     else:
-    #         print ('Opening chat')
-    #         keyboard.press('c')
-    #         keyboard.release('c')
-    #         print ('Searching for keywords now')
-    #         pass
-    # elif bot.state == UserAction.CHECK_BALANCE:
-    #     print ('checking balancen ow')
-
-    # cv.imshow('Matches', wincap.screenshot)
-    # press 'q' with the output window focused to exit.
-    # waits 1 ms every loop to process key presses
-    key = cv.waitKey(1)
-    if key == ord('q'):
-        wincap.stop()
-        bot.stop()
-        cv.destroyAllWindows()
-        break
+        key = cv.waitKey(1)
+        if key == ord('q'):
+            wincap.stop()
+            bot.stop()
+            cv.destroyAllWindows()
+            break
+        elif key == ord('a'):
+            bot.state = BotState.CHECKING_SHIELD
 print('Done.')

@@ -49,7 +49,7 @@ def compare_dates(supplied_time, fr='%m/%d/%y %H.%M.%S'):
         print ('You a crazy mofo for tracking this jesus')
         return False
     elif supplied_obj > now:
-        print ('We are still shielded, life is good')
+        # shield is active we are gucci
         return True
 
     print ('Panik. Shield has expired')
